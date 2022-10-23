@@ -21,6 +21,12 @@ import numpy
 
 import glob
 
+class Result:
+  def __init__(self, bboxes, labels, classes):
+    self.bboxes = bboxes
+    self.labels = labels
+    self.classes = classes
+
 class NumpyArrayEncoder(JSONEncoder):
     def default(self, obj):
         if isinstance(obj, numpy.ndarray):
@@ -83,9 +89,13 @@ def main(args):
       labels = [ numpy.full(bbox.shape[0], i, dtype=numpy.int32) for i, bbox in enumerate(result) ]
       labels = numpy.concatenate(labels)
       name = img.split('.')[0]
-      save_json(bboxes, "{}-bboxes.json".format(name))
-      save_json(labels, "{}-labels.json".format(name))
-      save_json(model.CLASSES, "{}-classes.json".format(name))
+      #save_json(bboxes, "{}-bboxes.json".format(name))
+      #save_json(labels, "{}-labels.json".format(name))
+      #save_json(model.CLASSES, "{}-classes.json".format(name))
+      res = Result(bboxes, labels, model.CLASSES)
+      content = json.dumps(res.__dict__, cls=NumpyArrayEncoder)
+      with open("{}-results.json".format(name), "w") as outfile:
+        outfile.write(content)
 
 if __name__ == '__main__':
     args = parse_args()
