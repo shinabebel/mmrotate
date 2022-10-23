@@ -4,13 +4,7 @@
 Example:
 ```
 wget -P checkpoint https://download.openmmlab.com/mmrotate/v0.1.0/oriented_rcnn/oriented_rcnn_r50_fpn_1x_dota_le90/oriented_rcnn_r50_fpn_1x_dota_le90-6d2b2ce0.pth  # noqa: E501, E261.
-python demo/huge_image_demo.py \
-    demo/dota_demo.jpg \
-    configs/oriented_rcnn/oriented_rcnn_r50_fpn_1x_dota_v3.py \
-    checkpoint/oriented_rcnn_r50_fpn_1x_dota_le90-6d2b2ce0.pth \
-```
-```
-python demo/batch_image_demo.py demo/dota_demo.jpg configs/oriented_rcnn/oriented_rcnn_r50_fpn_1x_dota_le90.py checkpoint/oriented_rcnn_r50_fpn_1x_dota_le90-6d2b2ce0.pth
+python demo/batch_image_demo.py path_to_folder configs/oriented_rcnn/oriented_rcnn_r50_fpn_1x_dota_le90.py checkpoint/oriented_rcnn_r50_fpn_1x_dota_le90-6d2b2ce0.pth
 ```
 """  # nowq
 
@@ -22,10 +16,9 @@ from mmrotate.apis import inference_detector_by_patches
 
 import json
 from json import JSONEncoder
+
 import numpy
-import os
-from os import listdir
-from os.path import isfile, join
+
 import glob
 
 class NumpyArrayEncoder(JSONEncoder):
@@ -81,32 +74,18 @@ def parse_args():
 
 
 def main(args):
-    # build the model from a config file and a checkpoint file
     model = init_detector(args.config, args.checkpoint, device=args.device)
     files = glob.glob("{}/*.jpg".format(args.folder))
     for img in files:
-      # test a huge image by patches
       result = inference_detector_by_patches(model, img, args.patch_sizes, args.patch_steps, args.img_ratios, args.merge_iou_thr)
       print("img {} get {} results".format(img, result.__len__()))
       bboxes = numpy.vstack(result)
       labels = [ numpy.full(bbox.shape[0], i, dtype=numpy.int32) for i, bbox in enumerate(result) ]
       labels = numpy.concatenate(labels)
-      #folder = "C:\conda\mmrotate\demo"
-      #files = [f for f in listdir(folder) if isfile(join(folder, f))]
-      #print("folder {} contains {} files".format(folder, files.__len__()))
-      #files = glob.glob("{}/*.jpg".format(folder))
-      #print("folder {} contains {} jpg files".format(folder, files.__len__()))
-      #print(files)
       name = img.split('.')[0]
       save_json(bboxes, "{}-bboxes.json".format(name))
       save_json(labels, "{}-labels.json".format(name))
       save_json(model.CLASSES, "{}-classes.json".format(name))
-    #jsonObj = json.dumps(result)
-    #print(jsonObj)
-
-    # show the results
-    #show_result_pyplot( model, args.img, result, palette=args.palette, score_thr=args.score_thr)
-
 
 if __name__ == '__main__':
     args = parse_args()
