@@ -4,6 +4,7 @@
 Example:
 ```
 wget -P checkpoint https://download.openmmlab.com/mmrotate/v0.1.0/oriented_rcnn/oriented_rcnn_r50_fpn_1x_dota_le90/oriented_rcnn_r50_fpn_1x_dota_le90-6d2b2ce0.pth  # noqa: E501, E261.
+conda activate openmmlab
 python demo/batch_image_demo.py path_to_folder configs/oriented_rcnn/oriented_rcnn_r50_fpn_1x_dota_le90.py checkpoint/oriented_rcnn_r50_fpn_1x_dota_le90-6d2b2ce0.pth
 ```
 """  # nowq
@@ -81,21 +82,23 @@ def parse_args():
 
 def main(args):
     model = init_detector(args.config, args.checkpoint, device=args.device)
-    files = glob.glob("{}/*.jpg".format(args.folder))
+    files = glob.glob("{}/*.png".format(args.folder))
     for img in files:
       result = inference_detector_by_patches(model, img, args.patch_sizes, args.patch_steps, args.img_ratios, args.merge_iou_thr)
-      print("img {} get {} results".format(img, result.__len__()))
       bboxes = numpy.vstack(result)
       labels = [ numpy.full(bbox.shape[0], i, dtype=numpy.int32) for i, bbox in enumerate(result) ]
       labels = numpy.concatenate(labels)
+      print("img {} get {} results".format(img, bboxes.__len__()))
       name = img.split('.')[0]
       #save_json(bboxes, "{}-bboxes.json".format(name))
       #save_json(labels, "{}-labels.json".format(name))
       #save_json(model.CLASSES, "{}-classes.json".format(name))
       res = Result(bboxes, labels, model.CLASSES)
       content = json.dumps(res.__dict__, cls=NumpyArrayEncoder)
-      with open("{}-results.json".format(name), "w") as outfile:
+      with open("{}.json".format(name), "w") as outfile:
         outfile.write(content)
+
+      show_result_pyplot(model, img, result, palette=args.palette, score_thr=args.score_thr, out_file="{}-results.jpg".format(name))
 
 if __name__ == '__main__':
     args = parse_args()
